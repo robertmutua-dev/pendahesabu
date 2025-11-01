@@ -39,7 +39,7 @@ class Comments
             $stmt->bindParam(":comment", $comment, PDO::PARAM_STR);
             $stmt->bindParam(":image_path", $image_path, PDO::PARAM_STR);
             $stmt->execute();
-            return $stmt->rowCount();
+            return $this->pdo->lastInsertId();
         } catch (PDOException $e) {
             error_log("Error during commenting on post:".$e->getMessage());
             return 0;

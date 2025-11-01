@@ -264,4 +264,30 @@ public function create()
     header("Location: /pendahesabu/users/settings");
 }
 
+ function sendOneSignalNotification($user_ids, $message, $comment_id) {
+    $fields = array(
+        'app_id' => "Y2973e886-8b40-46d9-b57f-2168d8469650",
+        'include_external_user_ids' => $user_ids,
+        'headings' => array("en" => "New Update"),
+        'contents' => array("en" => $message),
+        'url' => "http://localhost/pendahesabu/student/post/$comment_id" // URL to redirect on click
+    );
+
+    $fields = json_encode($fields);
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://onesignal.com/api/v1/notifications");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json; charset=utf-8',
+        'Authorization: msif3jmfyep6ehhkc5jbqzmb5'
+    ));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($ch, CURLOPT_POST, TRUE);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    return $response;
+}
+
 }

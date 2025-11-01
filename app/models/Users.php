@@ -148,6 +148,22 @@ class Users
             return null;
         }
     }
+
+    // get users for notifications
+    public function notifyUsers($school,$userid)
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT * FROM users WHERE(school_id= :school OR id=:school) AND id!=:user_id");
+            $stmt->bindParam(':user_id',$userid);
+            $stmt->bindParam(':school',$school);
+            $stmt->execute();
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return $users ?: null;
+        } catch (PDOException $e) {
+            error_log("Error fetching users!".$e->getMessage());
+            return null;
+        }
+    }
 }
 // $user= new Users();
 // $user->createUser('Green Field School', 'gfs@mail.com','school', 123, null);

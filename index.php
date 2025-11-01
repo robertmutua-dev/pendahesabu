@@ -1,16 +1,4 @@
-<html>
-    <head>
-        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "2973e886-8b40-46d9-b57f-2168d8469650",
-    });
-  });
-</script>
-    </head>
-    <body>
+
     <?php
 ini_set('display_errors',1);
 ini_set('display_startup_errors',1);
@@ -246,6 +234,4 @@ switch (true) {
         break;
 }
 ?>
-</body>
-</html>
         

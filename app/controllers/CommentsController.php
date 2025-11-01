@@ -1,41 +1,20 @@
 <?php
 $model= __DIR__ ."/../models/Comments.php";
+require_once __DIR__."/../models/Users.php";
 require_once $model;
 class CommentsController
 {
     private $model;
+    private $users;
     public function __construct() {
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
         }
 
         $this->model = new Comments();
+        $this->users=new Users();
     }
-    
-    private function sendNotification($message) {
-    $content = array("en" => $message);
-    $fields = array(
-        'app_id' => "2973e886-8b40-46d9-b57f-2168d8469650",
-        'included_segments' => array('All'),
-        'contents' => $content
-    );
-    $fields = json_encode($fields);
 
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "https://onesignal.com/api/v1/notifications");
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json; charset=utf-8',
-        'Authorization: Basic msif3jmfyep6ehhkc5jbqzmb5'
-    ));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-
-    $response = curl_exec($ch);
-    curl_close($ch);
-
-    return $response;
-}
 
     // comment a post
     public function comment()
@@ -92,9 +71,15 @@ class CommentsController
 
     // ✅ Save comment via model
     $response = $this->model->post($post, $comment,$commenter, $image_path);
-        $this->sendNotification("New post: " . substr($content, 0, 50));
     if ($response > 0) {
-        $_SESSION['success'] = "Comment submitted successfully!";
+        $comment_id=$response;
+        $school_id=$_SESSION['user']['role']==='school' ? $commenter : $_SESSION['user']['school_id'];
+        $users=$this->users->notifyUsers($school_id,$commenter);
+        $message=$_SESSION['user']['name']." posted a new update.";
+        $this->sendOneSignalNotification($users,$message,$comment_id);
+        $_SESSION["success"] = "Comment created successfully.";
+        header("Location: /pendahesabu/{$userDir}/posts");
+        exit();
     } else {
         $_SESSION['error'] = "Failed to submit comment.";
     }
@@ -143,4 +128,30 @@ class CommentsController
     header("Location:/pendahesabu/{$userDir}/posts");
         exit();
     }
+
+    private  function sendOneSignalNotification($user_ids, $message, $comment_id) {
+    $fields = array(
+        'app_id' => "Y2973e886-8b40-46d9-b57f-2168d8469650",
+        'include_external_user_ids' => $user_ids,
+        'headings' => array("en" => "New Update"),
+        'contents' => array("en" => $message),
+        'url' => "http://localhost/pendahesabu/student/post/$comment_id" // URL to redirect on click
+    );
+
+    $fields = json_encode($fields);
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://onesignal.com/api/v1/notifications");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json; charset=utf-8',
+        'Authorization: msif3jmfyep6ehhkc5jbqzmb5'
+    ));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($ch, CURLOPT_POST, TRUE);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    return $response;
+}
 }

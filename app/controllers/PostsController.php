@@ -1,45 +1,26 @@
 <?php
 $model= __DIR__ ."/../models/Posts.php";
 require_once $model;
+require_once __DIR__."/../models/Users.php";
 $userDir=$_SESSION['user']['role'] ?? '';
 
 class PostsController
 {
     private $model;
+    private $users;
     public function __construct() {
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
         }
 
         $this->model = new Posts();
+        $this->users=new Users();
     }
+
     
     
-    private function sendNotification($message) {
-    $content = array("en" => $message);
-    $fields = array(
-        'app_id' => "2973e886-8b40-46d9-b57f-2168d8469650",
-        'included_segments' => array('All'),
-        'contents' => $content
-    );
-    $fields = json_encode($fields);
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "https://onesignal.com/api/v1/notifications");
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: application/json; charset=utf-8',
-        'Authorization: Basic msif3jmfyep6ehhkc5jbqzmb5'
-    ));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-
-    $response = curl_exec($ch);
-    curl_close($ch);
-
-    return $response;
-}
-
+    
+   
     // index function
     public function index() {
         if ($_SESSION['user']['role']==='school') {
@@ -117,8 +98,12 @@ public function create() {
 
     // ✅ Save post
     $response = $this->model->postContent($user_id, $content, $file_path);
-    $this->sendNotification("New post: " . substr($content, 0, 50));
     if ($response > 0) {
+        $post_id=$response;
+        $school_id=$_SESSION['user']['role']==='school' ? $user_id : $_SESSION['user']['school_id'];
+        $users=$this->users->notifyUsers($school_id,$user_id);
+        $message=$_SESSION['user']['name']." posted a new update.";
+        $this->sendOneSignalNotification($users,$message,$post_id);
         $_SESSION["success"] = "Post created successfully.";
         header("Location: /pendahesabu/{$userDir}/posts");
         exit();
@@ -219,4 +204,31 @@ public function create() {
             exit();
         }
     }
+
+    private  function sendOneSignalNotification($user_ids, $message, $post_id) {
+    $fields = array(
+        'app_id' => "Y2973e886-8b40-46d9-b57f-2168d8469650",
+        'include_external_user_ids' => $user_ids,
+        'headings' => array("en" => "New Update"),
+        'contents' => array("en" => $message),
+        'url' => "http://localhost/pendahesabu/student/post/$post_id" // URL to redirect on click
+    );
+
+    $fields = json_encode($fields);
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://onesignal.com/api/v1/notifications");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json; charset=utf-8',
+        'Authorization: msif3jmfyep6ehhkc5jbqzmb5'
+    ));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($ch, CURLOPT_POST, TRUE);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    return $response;
+}
+
 }

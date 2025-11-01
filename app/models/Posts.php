@@ -7,6 +7,7 @@ class Posts
     public function __construct() {
         $this->pdo=Database::getConnection();
         $this->createPostsTable();
+        $this->notifications();
     }
 
     private function createPostsTable(){
@@ -39,9 +40,8 @@ class Posts
         $stmt->bindValue(":user_id", $user_id, PDO::PARAM_INT);
         $stmt->bindValue(":content", $content, PDO::PARAM_STR);
         $stmt->bindValue(":image_path", $image_path, PDO::PARAM_STR);
-
         if ($stmt->execute()) {
-            return 1; // ✅ always return success so controller logic works
+            return $this->pdo->lastInsertId(); // ✅ always return success so controller logic works
         }
         return 0;
     } catch (PDOException $e) {
@@ -184,6 +184,24 @@ public function searchPost($keyword) {
         return null;
     }
 }
+
+// notifications
+private function notifications(){
+    $sql="CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,        -- who receives the notification
+    from_user_id INT NOT NULL,   -- who triggered it
+    post_id INT NOT NULL,        -- which post
+    type ENUM('comment','post') DEFAULT 'comment',
+    message VARCHAR(255) NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+$this->pdo->exec($sql);
+}
 }
 
-// $post= new Posts();
+$post= new Posts();
