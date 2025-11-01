@@ -1,0 +1,19 @@
+.message {
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: left;
+}
+
+.message.error {
+  background: #fee2e2;
+  color: var(--error);
+  border: 1px solid #fecaca;
+}
+
+.message.success {
+  background: #dcfce7;
+  color: var(--success);
+  border: 1px solid #bbf7d0;
+}
